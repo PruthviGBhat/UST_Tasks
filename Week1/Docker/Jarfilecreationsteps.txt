@@ -1,0 +1,17 @@
+  apt update
+  apt install openjdk-17-headless
+  apt install openjdk-17-jdk
+  javac helloworldjava.java
+  ls
+  mv helloworldjava.java HelloWorld.java
+  ls
+  javac HelloWorld.java
+  ls
+  echo "Main-Class: HelloWorld" > MANIFEST.MF
+  jar cfm HelloWorld.jar MANIFEST.MF HelloWorld.class
+  ls
+  nano dockerfile.app
+  docker build -f dockerfile.app -t hello-java .
+  docker images
+  docker run --rm hello-java the name is bond
+  nano dockerfile.app

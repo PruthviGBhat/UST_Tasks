@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: same-db-k8s
+  labels:
+    app: users-register-app
+
+spec:
+  replicas: 3
+
+  selector:
+    matchLabels:
+      app: spring-boot-k8s-samedb
+
+  template:
+    metadata:
+      labels:
+        app: spring-boot-k8s-samedb
+
+    spec:
+      containers:
+        - name: userscont
+          image: secretpower/monolith-k8s-samedb:latest
+
+          ports:
+            - containerPort: 8000
+            - containerPort: 3306

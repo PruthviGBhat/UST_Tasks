@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lab-service
+  namespace: healthcare
+  labels:
+    app: lab-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lab-service
+  template:
+    metadata:
+      labels:
+        app: lab-service
+    spec:
+      containers:
+        - name: lab-service
+          image: <your-dockerhub>/lab-service:v1
+          ports:
+            - containerPort: 3006
+          envFrom:
+            - configMapRef:
+                name: lab-config
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: healthcare-secrets
+                  key: db-password
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: healthcare-secrets
+                  key: jwt-secret
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: lab-svc
+  namespace: healthcare
+spec:
+  selector:
+    app: lab-service
+  ports:
+    - port: 3006
+      targetPort: 3006
+  type: ClusterIP

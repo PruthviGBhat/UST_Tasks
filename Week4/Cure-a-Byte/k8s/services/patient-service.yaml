@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: patient-service
+  namespace: healthcare
+  labels:
+    app: patient-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: patient-service
+  template:
+    metadata:
+      labels:
+        app: patient-service
+    spec:
+      containers:
+        - name: patient-service
+          image: <your-dockerhub>/patient-service:v1
+          ports:
+            - containerPort: 3003
+          envFrom:
+            - configMapRef:
+                name: patient-config
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: healthcare-secrets
+                  key: db-password
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: healthcare-secrets
+                  key: jwt-secret
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: patient-svc
+  namespace: healthcare
+spec:
+  selector:
+    app: patient-service
+  ports:
+    - port: 3003
+      targetPort: 3003
+  type: ClusterIP

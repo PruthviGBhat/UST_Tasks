@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pharmacy-service
+  namespace: healthcare
+  labels:
+    app: pharmacy-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pharmacy-service
+  template:
+    metadata:
+      labels:
+        app: pharmacy-service
+    spec:
+      containers:
+        - name: pharmacy-service
+          image: <your-dockerhub>/pharmacy-service:v1
+          ports:
+            - containerPort: 3005
+          envFrom:
+            - configMapRef:
+                name: pharmacy-config
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: healthcare-secrets
+                  key: db-password
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: healthcare-secrets
+                  key: jwt-secret
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: pharmacy-svc
+  namespace: healthcare
+spec:
+  selector:
+    app: pharmacy-service
+  ports:
+    - port: 3005
+      targetPort: 3005
+  type: ClusterIP

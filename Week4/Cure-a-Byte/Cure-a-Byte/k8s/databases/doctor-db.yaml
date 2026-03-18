@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: doctor-db
+  namespace: healthcare
+  labels:
+    app: doctor-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: doctor-db
+  template:
+    metadata:
+      labels:
+        app: doctor-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: "doctor_db"
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: healthcare-secrets
+                  key: db-password
+            - name: PGDATA
+              value: "/var/lib/postgresql/data/pgdata"
+          volumeMounts:
+            - name: doctor-db-storage
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: doctor-db-storage
+          hostPath:
+            path: /data/healthcare/doctor-db
+            type: DirectoryOrCreate
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: doctor-db-svc
+  namespace: healthcare
+spec:
+  selector:
+    app: doctor-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+  type: ClusterIP

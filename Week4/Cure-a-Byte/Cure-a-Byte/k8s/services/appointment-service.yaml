@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: appointment-service
+  namespace: healthcare
+  labels:
+    app: appointment-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: appointment-service
+  template:
+    metadata:
+      labels:
+        app: appointment-service
+    spec:
+      containers:
+        - name: appointment-service
+          image: <your-dockerhub>/appointment-service:v1
+          ports:
+            - containerPort: 3004
+          envFrom:
+            - configMapRef:
+                name: appointment-config
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: healthcare-secrets
+                  key: db-password
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: healthcare-secrets
+                  key: jwt-secret
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: appointment-svc
+  namespace: healthcare
+spec:
+  selector:
+    app: appointment-service
+  ports:
+    - port: 3004
+      targetPort: 3004
+  type: ClusterIP

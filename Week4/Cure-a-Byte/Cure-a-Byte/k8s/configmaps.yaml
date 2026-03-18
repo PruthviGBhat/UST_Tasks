@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: auth-config
+  namespace: healthcare
+data:
+  DB_HOST: "auth-db-svc"
+  DB_PORT: "5432"
+  DB_NAME: "auth_db"
+  DB_USER: "postgres"
+  PORT: "3001"
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: doctor-config
+  namespace: healthcare
+data:
+  DB_HOST: "doctor-db-svc"
+  DB_PORT: "5432"
+  DB_NAME: "doctor_db"
+  DB_USER: "postgres"
+  PORT: "3002"
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: patient-config
+  namespace: healthcare
+data:
+  DB_HOST: "patient-db-svc"
+  DB_PORT: "5432"
+  DB_NAME: "patient_db"
+  DB_USER: "postgres"
+  PORT: "3003"
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: appointment-config
+  namespace: healthcare
+data:
+  DB_HOST: "appointment-db-svc"
+  DB_PORT: "5432"
+  DB_NAME: "appointment_db"
+  DB_USER: "postgres"
+  PORT: "3004"
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pharmacy-config
+  namespace: healthcare
+data:
+  DB_HOST: "pharmacy-db-svc"
+  DB_PORT: "5432"
+  DB_NAME: "pharmacy_db"
+  DB_USER: "postgres"
+  PORT: "3005"
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lab-config
+  namespace: healthcare
+data:
+  DB_HOST: "lab-db-svc"
+  DB_PORT: "5432"
+  DB_NAME: "lab_db"
+  DB_USER: "postgres"
+  PORT: "3006"

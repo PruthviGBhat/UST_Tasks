@@ -1,0 +1,102 @@
+# k8s/httproute.yaml
+ 
+# ── 1. User Service ──────────────────────────────────────────────
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: user-service-route
+  namespace: banking
+spec:
+  parentRefs:
+    - name: banking-gateway
+      namespace: banking
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api/users
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: gateway.kgateway.dev
+            kind: TrafficPolicy
+            name: banking-cors-policy
+      backendRefs:
+        - name: user-service
+          port: 3001
+ 
+---
+ 
+# ── 2. Account Service ───────────────────────────────────────────
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: account-service-route
+  namespace: banking
+spec:
+  parentRefs:
+    - name: banking-gateway
+      namespace: banking
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api/accounts
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: gateway.kgateway.dev
+            kind: TrafficPolicy
+            name: banking-cors-policy
+      backendRefs:
+        - name: account-service
+          port: 3002
+ 
+---
+ 
+# ── 3. Transaction Service ───────────────────────────────────────
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: transaction-service-route
+  namespace: banking
+spec:
+  parentRefs:
+    - name: banking-gateway
+      namespace: banking
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api/transactions
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: gateway.kgateway.dev
+            kind: TrafficPolicy
+            name: banking-cors-policy
+      backendRefs:
+        - name: transaction-service
+          port: 3003
+ 
+---
+ 
+# ── 4. Frontend – catch-all ──────────────────────────────────────
+# No CORS needed — served from the same origin.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: frontend-route
+  namespace: banking
+spec:
+  parentRefs:
+    - name: banking-gateway
+      namespace: banking
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: frontend
+          port: 80

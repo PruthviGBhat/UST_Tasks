@@ -1,0 +1,38 @@
+# ════════════════════════════════════════════════════════════
+# MediMesh — MongoDB PVC (Dynamic NFS Provisioning)
+# ════════════════════════════════════════════════════════════
+#
+# NOTICE: No PersistentVolume YAML needed!
+#
+# The NFS provisioner will AUTOMATICALLY:
+#   1. Create /srv/nfs/medimesh/medimesh-medimesh-mongodb-pvc-pvc-xxx/
+#      on the NFS server
+#   2. Create a PV object in Kubernetes
+#   3. Bind this PVC to that PV
+#
+# Compare with your old setup:
+#   OLD: PV (manual) + PVC (manual) = 2 files, ~40 lines
+#   NEW: PVC only = 1 file, ~20 lines  ← Much simpler!
+#
+# ════════════════════════════════════════════════════════════
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: medimesh-mongodb-pvc
+  namespace: medimesh
+  labels:
+    app: medimesh-mongodb
+    tier: database
+spec:
+  accessModes:
+    - ReadWriteOnce              # Single pod read-write (MongoDB)
+
+  # THIS is the key change!
+  # "medimesh-nfs" matches the StorageClass we created
+  # The provisioner sees this and auto-creates the PV
+  storageClassName: medimesh-nfs
+
+  resources:
+    requests:
+      storage: 5Gi

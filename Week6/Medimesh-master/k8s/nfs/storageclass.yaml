@@ -1,0 +1,48 @@
+# ════════════════════════════════════════════════════════════
+# MediMesh — NFS StorageClass for Dynamic Provisioning
+# ════════════════════════════════════════════════════════════
+#
+# HOW THIS WORKS:
+#
+#   1. You create a PVC with storageClassName: "medimesh-nfs"
+#   2. Kubernetes sees no matching PV exists
+#   3. Kubernetes looks at the StorageClass "medimesh-nfs"
+#   4. The StorageClass says: "use provisioner medimesh/nfs"
+#   5. The NFS provisioner pod catches this request
+#   6. It creates a subdirectory on the NFS server
+#   7. It creates a PV pointing to that subdirectory
+#   8. It binds the PVC to the new PV
+#   9. Your pod can now mount the PVC and use it!
+#
+# ════════════════════════════════════════════════════════════
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: medimesh-nfs
+  labels:
+    app: medimesh
+  annotations:
+    # Make this the default StorageClass (optional)
+    # If a PVC doesn't specify a storageClassName,
+    # this one will be used automatically
+    storageclass.kubernetes.io/is-default-class: "false"
+
+# This MUST match the PROVISIONER_NAME env var
+# in the provisioner deployment (step 4c)
+provisioner: medimesh/nfs
+
+# What happens when a PVC is deleted?
+#   "Delete"  = auto-remove the NFS subdirectory (clean up)
+#   "Retain"  = keep the data (you delete manually later)
+reclaimPolicy: Retain
+
+# Dynamic provisioning doesn't need immediate binding
+volumeBindingMode: Immediate
+
+# Parameters passed to the provisioner
+parameters:
+  # "archiveOnDelete" = when PVC is deleted:
+  #   "true"  = rename directory to "archived-xxx" (keeps data)
+  #   "false" = actually delete the directory
+  archiveOnDelete: "true"

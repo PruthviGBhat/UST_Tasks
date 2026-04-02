@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nfs-provisioner
+  namespace: medimesh
+  labels:
+    app: nfs-provisioner
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: nfs-provisioner
+  template:
+    metadata:
+      labels:
+        app: nfs-provisioner
+    spec:
+      serviceAccountName: nfs-provisioner
+
+      containers:
+        - name: nfs-provisioner
+          # ════════════════════════════════════════
+          # ✅ FIXED: Changed v4.0.18 → v4.0.2
+          # ════════════════════════════════════════
+          image: registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2
+          imagePullPolicy: IfNotPresent
+
+          env:
+            - name: PROVISIONER_NAME
+              value: "medimesh/nfs"
+
+            # ⚠️ REPLACE with your actual NFS server private IP
+            - name: NFS_SERVER
+              value: "172.31.6.218"
+
+            - name: NFS_PATH
+              value: "/srv/nfs/medimesh"
+
+          volumeMounts:
+            - name: nfs-root
+              mountPath: /persistentvolumes
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+
+      volumes:
+        - name: nfs-root
+          nfs:
+            # ⚠️ REPLACE with your actual NFS server private IP
+            server: "172.31.6.218"
+            path: "/srv/nfs/medimesh"

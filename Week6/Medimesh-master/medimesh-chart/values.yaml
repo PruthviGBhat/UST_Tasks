@@ -1,0 +1,156 @@
+# ════════════════════════════════════════════════════════════
+# MediMesh Helm Values
+# ════════════════════════════════════════════════════════════
+
+global:
+  namespace: medimesh
+  imageRegistry: bharath44623
+  imagePullPolicy: IfNotPresent
+  defaultReplicas: 2
+
+mongodb:
+  image: mongo
+  tag: "7"
+  replicas: 3
+  port: 27017
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  nfs:
+    serverIP: "172.31.6.218"
+    path: "/srv/nfs/medimesh"
+    storageSize: 5Gi
+    storageClassName: medimesh-nfs
+    reclaimPolicy: Retain
+  provisioner:
+    image: registry.k8s.io/sig-storage/nfs-subdir-external-provisioner
+    tag: "v4.0.2"
+    name: "medimesh/nfs"
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+      limits:
+        cpu: "200m"
+        memory: "256Mi"
+
+secrets:
+  jwtSecret: "bWVkaW1lc2hfc3VwZXJfc2VjcmV0X2tleV8yMDI2"
+  adminUsername: "YWRtaW4="
+  adminPassword: "MTIzNDU2"
+
+backend:
+  tag: latest
+  replicas: 2
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "250m"
+  initContainer:
+    image: busybox
+    tag: "1.36"
+  probes:
+    readiness:
+      path: /health
+      initialDelaySeconds: 10
+      periodSeconds: 15
+    liveness:
+      path: /health
+      initialDelaySeconds: 20
+      periodSeconds: 30
+  strategy:
+    maxUnavailable: 1
+    maxSurge: 1
+
+frontend:
+  name: medimesh-frontend
+  image: medimesh_medimesh-frontend
+  tag: latest
+  replicas: 2
+  port: 80
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "150m"
+  sidecar:
+    enabled: true
+    image: busybox
+    tag: "1.36"
+
+hpa:
+  enabled: true
+  frontend:
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilization: 60
+
+gateway:
+  enabled: true
+  name: medimesh-gateway
+  className: kgateway
+  port: 80
+
+# ════════════════════════════════════════════════════════════
+# Services — Each entry generates a Deployment + Service
+# ════════════════════════════════════════════════════════════
+services:
+  auth:
+    name: medimesh-auth
+    port: 5001
+    image: medimesh_medimesh-auth
+    dbName: medimesh-auth-db
+  user:
+    name: medimesh-user
+    port: 5002
+    image: medimesh_medimesh-user
+    dbName: medimesh-user-db
+  doctor:
+    name: medimesh-doctor
+    port: 5003
+    image: medimesh_medimesh-doctor
+    dbName: medimesh-doctor-db
+  appointment:
+    name: medimesh-appointment
+    port: 5004
+    image: medimesh_medimesh-appointment
+    dbName: medimesh-appointment-db
+  vitals:
+    name: medimesh-vitals
+    port: 5005
+    image: medimesh_medimesh-vitals
+    dbName: medimesh-vitals-db
+  pharmacy:
+    name: medimesh-pharmacy
+    port: 5006
+    image: medimesh_medimesh-pharmacy
+    dbName: medimesh-pharmacy-db
+  ambulance:
+    name: medimesh-ambulance
+    port: 5007
+    image: medimesh_medimesh-ambulance
+    dbName: medimesh-ambulance-db
+  complaint:
+    name: medimesh-complaint
+    port: 5008
+    image: medimesh_medimesh-complaint
+    dbName: medimesh-complaint-db
+  forum:
+    name: medimesh-forum
+    port: 5009
+    image: medimesh_medimesh-forum
+    dbName: medimesh-forum-db
+  bff:
+    name: medimesh-bff
+    port: 5010
+    image: medimesh_medimesh-bff
+    dbName: ""

@@ -1,0 +1,15 @@
+# ════════════════════════════════════════════════════════════
+# MediMesh — NFS StorageClass for Dynamic Provisioning
+# ════════════════════════════════════════════════════════════
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: {{ .Values.mongodb.nfs.storageClassName }}
+  labels:
+    {{- include "medimesh.labels" . | nindent 4 }}
+provisioner: {{ .Values.mongodb.provisioner.name }}
+reclaimPolicy: {{ .Values.mongodb.nfs.reclaimPolicy }}
+volumeBindingMode: Immediate
+parameters:
+  archiveOnDelete: "true"

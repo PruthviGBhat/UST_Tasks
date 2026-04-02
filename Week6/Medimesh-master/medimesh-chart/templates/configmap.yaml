@@ -1,0 +1,37 @@
+# ════════════════════════════════════════════════════════════
+# MediMesh — ConfigMap (Non-sensitive configuration)
+# ════════════════════════════════════════════════════════════
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: medimesh-config
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "medimesh.labels" . | nindent 4 }}
+data:
+  MONGO_HOST: "medimesh-mongodb"
+  MONGO_PORT: "{{ .Values.mongodb.port }}"
+  NODE_ENV: "production"
+
+  # Service URLs (for inter-service communication via BFF)
+  AUTH_SERVICE_URL: "http://{{ .Values.services.auth.name }}:{{ .Values.services.auth.port }}"
+  USER_SERVICE_URL: "http://{{ .Values.services.user.name }}:{{ .Values.services.user.port }}"
+  DOCTOR_SERVICE_URL: "http://{{ .Values.services.doctor.name }}:{{ .Values.services.doctor.port }}"
+  APPOINTMENT_SERVICE_URL: "http://{{ .Values.services.appointment.name }}:{{ .Values.services.appointment.port }}"
+  VITALS_SERVICE_URL: "http://{{ .Values.services.vitals.name }}:{{ .Values.services.vitals.port }}"
+  PHARMACY_SERVICE_URL: "http://{{ .Values.services.pharmacy.name }}:{{ .Values.services.pharmacy.port }}"
+  AMBULANCE_SERVICE_URL: "http://{{ .Values.services.ambulance.name }}:{{ .Values.services.ambulance.port }}"
+  COMPLAINT_SERVICE_URL: "http://{{ .Values.services.complaint.name }}:{{ .Values.services.complaint.port }}"
+  FORUM_SERVICE_URL: "http://{{ .Values.services.forum.name }}:{{ .Values.services.forum.port }}"
+
+  # MongoDB URIs for each service
+  AUTH_MONGO_URI: "mongodb://medimesh-mongodb:{{ .Values.mongodb.port }}/{{ .Values.services.auth.dbName }}"
+  USER_MONGO_URI: "mongodb://medimesh-mongodb:{{ .Values.mongodb.port }}/{{ .Values.services.user.dbName }}"
+  DOCTOR_MONGO_URI: "mongodb://medimesh-mongodb:{{ .Values.mongodb.port }}/{{ .Values.services.doctor.dbName }}"
+  APPOINTMENT_MONGO_URI: "mongodb://medimesh-mongodb:{{ .Values.mongodb.port }}/{{ .Values.services.appointment.dbName }}"
+  VITALS_MONGO_URI: "mongodb://medimesh-mongodb:{{ .Values.mongodb.port }}/{{ .Values.services.vitals.dbName }}"
+  PHARMACY_MONGO_URI: "mongodb://medimesh-mongodb:{{ .Values.mongodb.port }}/{{ .Values.services.pharmacy.dbName }}"
+  AMBULANCE_MONGO_URI: "mongodb://medimesh-mongodb:{{ .Values.mongodb.port }}/{{ .Values.services.ambulance.dbName }}"
+  COMPLAINT_MONGO_URI: "mongodb://medimesh-mongodb:{{ .Values.mongodb.port }}/{{ .Values.services.complaint.dbName }}"
+  FORUM_MONGO_URI: "mongodb://medimesh-mongodb:{{ .Values.mongodb.port }}/{{ .Values.services.forum.dbName }}"

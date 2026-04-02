@@ -1,0 +1,23 @@
+# ════════════════════════════════════════════════════════════
+# MediMesh — Frontend ClusterIP Service
+# ════════════════════════════════════════════════════════════
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.frontend.name }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: {{ .Values.frontend.name }}
+    tier: frontend
+    {{- include "medimesh.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ .Values.frontend.name }}
+    tier: frontend
+  ports:
+    - port: {{ .Values.frontend.port }}
+      targetPort: {{ .Values.frontend.port }}
+      protocol: TCP
+      name: http

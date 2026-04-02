@@ -1,0 +1,21 @@
+{{- range $key, $svc := .Values.services }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $svc.name }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    app: {{ $svc.name }}
+    tier: backend
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ $svc.name }}
+    tier: backend
+  ports:
+    - port: {{ $svc.port }}
+      targetPort: {{ $svc.port }}
+      protocol: TCP
+      name: http
+{{- end }}

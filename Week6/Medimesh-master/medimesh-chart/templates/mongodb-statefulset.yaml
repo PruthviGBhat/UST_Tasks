@@ -1,0 +1,164 @@
+# ════════════════════════════════════════════════════════════
+# MediMesh — MongoDB StatefulSet (3 Replicas)
+# ════════════════════════════════════════════════════════════
+#
+# KEY CHANGE FROM OLD VERSION:
+#
+#   OLD: "volumes:" + "persistentVolumeClaim:" (manual PVC)
+#        → Only works for 1 replica
+#
+#   NEW: "volumeClaimTemplates:" (auto PVC per replica)
+#        → Creates 1 PVC per pod automatically
+#        → Each pod gets its own 5Gi NFS volume
+#
+# AUTO-CREATED PVCs:
+#   mongodb-data-medimesh-mongodb-0  (5Gi on NFS)
+#   mongodb-data-medimesh-mongodb-1  (5Gi on NFS)
+#   mongodb-data-medimesh-mongodb-2  (5Gi on NFS)
+#
+# POD DNS NAMES:
+#   medimesh-mongodb-0.medimesh-mongodb.medimesh.svc
+#   medimesh-mongodb-1.medimesh-mongodb.medimesh.svc
+#   medimesh-mongodb-2.medimesh-mongodb.medimesh.svc
+#
+# ════════════════════════════════════════════════════════════
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: medimesh-mongodb
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: medimesh-mongodb
+    tier: database
+    {{- include "medimesh.labels" . | nindent 4 }}
+spec:
+  serviceName: medimesh-mongodb
+  replicas: {{ .Values.mongodb.replicas }}
+
+  # ─── Pod Management Policy ────────────────────────────
+  # "OrderedReady" (default) = create pods one by one (0, then 1, then 2)
+  #   Each pod must be Running before the next one starts.
+  # "Parallel" = create all pods simultaneously (faster but risky)
+  podManagementPolicy: OrderedReady
+
+  # ─── Update Strategy ─────────────────────────────────
+  # RollingUpdate: update one pod at a time, starting from
+  # the highest index (2 → 1 → 0)
+  updateStrategy:
+    type: RollingUpdate
+
+  selector:
+    matchLabels:
+      app: medimesh-mongodb
+      tier: database
+  template:
+    metadata:
+      labels:
+        app: medimesh-mongodb
+        tier: database
+    spec:
+      containers:
+        - name: mongodb
+          image: "{{ .Values.mongodb.image }}:{{ .Values.mongodb.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - containerPort: {{ .Values.mongodb.port }}
+              name: mongo
+
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.mongodb.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.mongodb.port }}
+            initialDelaySeconds: 15
+            periodSeconds: 20
+
+          # ─── Volume Mount ────────────────────────────
+          # "mongodb-data" matches the volumeClaimTemplates name below
+          volumeMounts:
+            - name: mongodb-data
+              mountPath: /data/db
+
+          resources:
+            requests:
+              memory: {{ .Values.mongodb.resources.requests.memory }}
+              cpu: {{ .Values.mongodb.resources.requests.cpu }}
+            limits:
+              memory: {{ .Values.mongodb.resources.limits.memory }}
+              cpu: {{ .Values.mongodb.resources.limits.cpu }}
+
+  # ════════════════════════════════════════════════════════
+  # THIS IS THE KEY CHANGE!
+  #
+  # "volumeClaimTemplates" tells the StatefulSet:
+  # "For EACH replica pod, create a NEW PVC using this template"
+  #
+  # Pod medimesh-mongodb-0 → PVC: mongodb-data-medimesh-mongodb-0
+  # Pod medimesh-mongodb-1 → PVC: mongodb-data-medimesh-mongodb-1
+  # Pod medimesh-mongodb-2 → PVC: mongodb-data-medimesh-mongodb-2
+  #
+  # The NFS dynamic provisioner will automatically:
+  #   1. See each new PVC
+  #   2. Create a subdirectory on NFS server
+  #   3. Create a PV for each PVC
+  #   4. Bind them together
+  #
+  # OLD approach that we REMOVED:
+  #   volumes:
+  #     - name: mongodb-data
+  #       persistentVolumeClaim:
+  #         claimName: medimesh-mongodb-pvc   ← single shared PVC
+  #
+  # NEW approach:
+  # ════════════════════════════════════════════════════════
+  volumeClaimTemplates:
+    - metadata:
+        name: mongodb-data
+        labels:
+          app: medimesh-mongodb
+          tier: database
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: {{ .Values.mongodb.nfs.storageClassName }}
+        resources:
+          requests:
+            storage: {{ .Values.mongodb.nfs.storageSize }}
+
+---
+# ─── Headless Service (for StatefulSet DNS) ───────────────
+# A headless service (clusterIP: None) gives each pod a
+# stable DNS name. This is REQUIRED for StatefulSets.
+#
+# Service DNS:  medimesh-mongodb.medimesh.svc
+#   → resolves to ALL pod IPs (round-robin)
+#
+# Pod DNS:
+#   medimesh-mongodb-0.medimesh-mongodb.medimesh.svc
+#   medimesh-mongodb-1.medimesh-mongodb.medimesh.svc
+#   medimesh-mongodb-2.medimesh-mongodb.medimesh.svc
+# ──────────────────────────────────────────────────────────
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: medimesh-mongodb
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: medimesh-mongodb
+    tier: database
+    {{- include "medimesh.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  selector:
+    app: medimesh-mongodb
+    tier: database
+  ports:
+    - port: {{ .Values.mongodb.port }}
+      targetPort: {{ .Values.mongodb.port }}
+      name: mongo

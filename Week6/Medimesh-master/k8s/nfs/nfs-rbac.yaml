@@ -1,0 +1,98 @@
+# ════════════════════════════════════════════════════════════
+# MediMesh — RBAC for NFS Provisioner
+# These permissions let the provisioner create PVs and
+# manage PVCs automatically.
+# ════════════════════════════════════════════════════════════
+
+# ─── ServiceAccount ───────────────────────────────────────
+# A "service account" is like a username for a pod.
+# Instead of running as anonymous, the provisioner pod
+# runs as "nfs-provisioner" and gets specific permissions.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nfs-provisioner
+  namespace: medimesh
+
+---
+# ─── ClusterRole ─────────────────────────────────────────
+# Defines WHAT actions are allowed (cluster-wide).
+# "Cluster" because PersistentVolumes are not namespaced —
+# they exist at the cluster level.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: nfs-provisioner-runner
+rules:
+  # Can manage PersistentVolumes (create, delete, get, list)
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+
+  # Can manage PersistentVolumeClaims (watch for new ones)
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "update"]
+
+  # Can read StorageClasses (to know which provisioner to use)
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "watch"]
+
+  # Can create Events (to log what happened)
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "update", "patch"]
+
+  # Can read Endpoints (needed for leader election in HA)
+  - apiGroups: [""]
+    resources: ["endpoints"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+
+---
+# ─── ClusterRoleBinding ─────────────────────────────────
+# Connects the ServiceAccount to the ClusterRole.
+# "nfs-provisioner in namespace medimesh CAN DO everything
+#  listed in nfs-provisioner-runner ClusterRole"
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: nfs-provisioner-binding
+subjects:
+  - kind: ServiceAccount
+    name: nfs-provisioner
+    namespace: medimesh
+roleRef:
+  kind: ClusterRole
+  name: nfs-provisioner-runner
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# ─── Role (namespace-scoped) ────────────────────────────
+# Some permissions are needed only within the medimesh namespace.
+# Leader election uses Endpoints in the same namespace.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: nfs-provisioner-leader
+  namespace: medimesh
+rules:
+  - apiGroups: [""]
+    resources: ["endpoints"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+
+---
+# ─── RoleBinding ────────────────────────────────────────
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: nfs-provisioner-leader-binding
+  namespace: medimesh
+subjects:
+  - kind: ServiceAccount
+    name: nfs-provisioner
+    namespace: medimesh
+roleRef:
+  kind: Role
+  name: nfs-provisioner-leader
+  apiGroup: rbac.authorization.k8s.io

@@ -1,0 +1,25 @@
+# ════════════════════════════════════════════════════════════
+# MediMesh Helm Chart — Metadata
+# ════════════════════════════════════════════════════════════
+
+apiVersion: v2                    # Helm chart API version (v2 = Helm 3)
+name: medimesh                    # Chart name
+description: >
+  MediMesh Hospital Management System - A MERN-stack microservices
+  platform with MongoDB, NFS persistence, kGateway routing, and
+  HAProxy load balancing.
+
+version: 1.0.0                   # Chart version (your packaging version)
+appVersion: "1.0.0"              # Your application version
+
+type: application                 # "application" (deployable) vs "library" (reusable)
+
+keywords:
+  - hospital
+  - microservices
+  - mongodb
+  - kubernetes
+  - mern
+
+maintainers:
+  - name: Pruthvi Bhat

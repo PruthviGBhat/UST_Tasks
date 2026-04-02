@@ -1,0 +1,51 @@
+# ════════════════════════════════════════════════════════════
+# MediMesh — NFS Subdir External Provisioner
+# ════════════════════════════════════════════════════════════
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nfs-provisioner
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: nfs-provisioner
+    {{- include "medimesh.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: nfs-provisioner
+  template:
+    metadata:
+      labels:
+        app: nfs-provisioner
+    spec:
+      serviceAccountName: nfs-provisioner
+      containers:
+        - name: nfs-provisioner
+          image: "{{ .Values.mongodb.provisioner.image }}:{{ .Values.mongodb.provisioner.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          env:
+            - name: PROVISIONER_NAME
+              value: {{ .Values.mongodb.provisioner.name | quote }}
+            - name: NFS_SERVER
+              value: {{ .Values.mongodb.nfs.serverIP | quote }}
+            - name: NFS_PATH
+              value: {{ .Values.mongodb.nfs.path | quote }}
+          volumeMounts:
+            - name: nfs-root
+              mountPath: /persistentvolumes
+          resources:
+            requests:
+              cpu: {{ .Values.mongodb.provisioner.resources.requests.cpu }}
+              memory: {{ .Values.mongodb.provisioner.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.mongodb.provisioner.resources.limits.cpu }}
+              memory: {{ .Values.mongodb.provisioner.resources.limits.memory }}
+      volumes:
+        - name: nfs-root
+          nfs:
+            server: {{ .Values.mongodb.nfs.serverIP | quote }}
+            path: {{ .Values.mongodb.nfs.path | quote }}

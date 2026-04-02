@@ -1,0 +1,40 @@
+# ════════════════════════════════════════════════════════════
+# MediMesh — MongoDB PersistentVolume & PersistentVolumeClaim
+# ════════════════════════════════════════════════════════════
+
+# ─── PersistentVolume (hostPath for kubeadm clusters) ─────
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: medimesh-mongodb-pv
+  labels:
+    app: medimesh-mongodb
+    tier: database
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
+  nfs:
+    server: 172.31.6.218
+    path: /exports/medimesh-mongodb
+
+---
+# ─── PersistentVolumeClaim ────────────────────────────────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: medimesh-mongodb-pvc
+  namespace: medimesh
+  labels:
+    app: medimesh-mongodb
+    tier: database
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: manual
+  resources:
+    requests:
+      storage: 5Gi

@@ -1,0 +1,92 @@
+# ════════════════════════════════════════════════════════════
+# MediMesh — Frontend Deployment
+# ════════════════════════════════════════════════════════════
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.frontend.name }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: {{ .Values.frontend.name }}
+    tier: frontend
+    {{- include "medimesh.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.frontend.replicas }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.frontend.name }}
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.frontend.name }}
+        tier: frontend
+    spec:
+      containers:
+        # ─── Main Nginx Container ─────────────────────
+        - name: {{ .Values.frontend.name }}
+          image: "{{ .Values.global.imageRegistry }}/{{ .Values.frontend.image }}:{{ .Values.frontend.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - containerPort: {{ .Values.frontend.port }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.frontend.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.frontend.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              memory: {{ .Values.frontend.resources.requests.memory }}
+              cpu: {{ .Values.frontend.resources.requests.cpu }}
+            limits:
+              memory: {{ .Values.frontend.resources.limits.memory }}
+              cpu: {{ .Values.frontend.resources.limits.cpu }}
+          {{- if .Values.frontend.sidecar.enabled }}
+          volumeMounts:
+            - name: nginx-logs
+              mountPath: /var/log/nginx
+
+        # ─── Sidecar: Log Aggregator ──────────────────
+        - name: log-aggregator
+          image: "{{ .Values.frontend.sidecar.image }}:{{ .Values.frontend.sidecar.tag }}"
+          command:
+            - sh
+            - -c
+            - |
+              while true; do
+                if [ -f /var/log/nginx/access.log ]; then
+                  tail -f /var/log/nginx/access.log
+                fi
+                sleep 5
+              done
+          volumeMounts:
+            - name: nginx-logs
+              mountPath: /var/log/nginx
+              readOnly: true
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "25m"
+            limits:
+              memory: "64Mi"
+              cpu: "50m"
+          {{- end }}
+
+      {{- if .Values.frontend.sidecar.enabled }}
+      volumes:
+        - name: nginx-logs
+          emptyDir: {}
+      {{- end }}

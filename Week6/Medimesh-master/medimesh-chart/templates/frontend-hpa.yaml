@@ -1,0 +1,28 @@
+# ════════════════════════════════════════════════════════════
+# MediMesh — Frontend HPA (Horizontal Pod Autoscaler)
+# ════════════════════════════════════════════════════════════
+
+{{- if .Values.hpa.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ .Values.frontend.name }}-hpa
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: {{ .Values.frontend.name }}
+    {{- include "medimesh.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ .Values.frontend.name }}
+  minReplicas: {{ .Values.hpa.frontend.minReplicas }}
+  maxReplicas: {{ .Values.hpa.frontend.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.hpa.frontend.targetCPUUtilization }}
+{{- end }}
